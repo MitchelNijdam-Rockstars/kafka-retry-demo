@@ -16,14 +16,28 @@ class ExceptionService(
         // time the service will take, can be used to validate kafka timeouts
         private val sleepMs: Long = 1_000
 ) {
-    // uses unique record identifier to capture attempts
+    // uses unique identifier to manage attempts for different messages
     private val attemptByRecordId: MutableList<RecordAttempt> = mutableListOf()
 
     data class RecordAttempt(val id: String, var attempts: Int = 0)
 
     fun withRecord(record: ConsumerRecord<String, String>): FakeService {
-        val recordId = "${record.topic()}-${record.value()}"
+        val recordId = "${record.topic()}-${record.offset()}"
 
+        val recordAttempt = increaseAndGetRecordAttempt(recordId)
+
+        return FakeService(recordAttempt, recoverAfterAttempt, sleepMs)
+    }
+
+    fun withRecords(records: List<ConsumerRecord<String, String>>): FakeService {
+        val recordsId = "${records.first().topic()}-${records.joinToString(separator = ",") { it.offset().toString() }}"
+
+        val recordAttempt = increaseAndGetRecordAttempt(recordsId)
+
+        return FakeService(recordAttempt, recoverAfterAttempt, sleepMs)
+    }
+
+    private fun increaseAndGetRecordAttempt(recordId: String): RecordAttempt {
         var recordAttempt = attemptByRecordId.find { it.id == recordId }
 
         if (recordAttempt == null) {
@@ -32,8 +46,7 @@ class ExceptionService(
         }
 
         recordAttempt.attempts += 1
-
-        return FakeService(recordAttempt, recoverAfterAttempt, sleepMs)
+        return recordAttempt
     }
 
     class FakeService(private val recordAttempt: RecordAttempt, private val recoverAfterAttempt: Int, private val sleepMs: Long) {

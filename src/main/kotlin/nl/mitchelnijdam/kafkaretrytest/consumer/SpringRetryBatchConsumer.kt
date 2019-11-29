@@ -16,12 +16,14 @@ import org.springframework.stereotype.Component
  * @author Mitchel Nijdam on 28-11-2019
  */
 @Component
-class SpringRetryBatchConsumer {
+class SpringRetryBatchConsumer(private val exceptionService: ExceptionService = ExceptionService()) {
 
     private val logger: Logger = LoggerFactory.getLogger(SpringRetryBatchConsumer::class.java)
 
     @KafkaListener(topics = ["test-retry-batch"], containerFactory = "kafkaBatchFactory")
     fun listen(records: List<ConsumerRecord<String, String>>, consumer: Consumer<*, *>) {
         logger.info("received ${records.size} 'test-retry-batch' record(s)!")
+
+        exceptionService.withRecords(records).iFailButWillRecover()
     }
 }

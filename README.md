@@ -5,9 +5,9 @@ For kafka consumers there are several approaches on handling errors. One is send
 This is where this project comes in: it provides some examples on how to handle transient exceptions for different types of kafka consumers and error handlers. Use this project as example on different retry mechanisms for kafka consumers using [spring-kafka](https://github.com/spring-projects/spring-kafka) library.
 
 ### Setup
-Make sure you have a local kafka instance running. Configure your broker ip in `application.yml` in `bootstrap-servers: <local_kafka_ip>:9092`. Also make sure all topics exist or the 
+Make sure you have a local kafka instance running. Configure your broker ip in `application.yml` in `bootstrap-servers: <local_kafka_ip>:9092`.
 
-Run with Java 11.
+Project uses Java 11.
 
 ### Local
 Produce kafka message(s) with the tool `kafkacat`.
