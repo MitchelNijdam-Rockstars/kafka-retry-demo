@@ -1,0 +1,12 @@
+logging.level:
+  nl.mitchelnijdam.kafkaretrytest: DEBUG
+
+spring:
+  application.name: kafka-retry-test
+  kafka:
+    bootstrap-servers: 192.168.99.100:9092 # your local kafka ip
+    listener:
+      missingTopicsFatal: false # does not consistently work in spring-kafka 2.3.3.RELEASE
+    consumer:
+      group-id: kafka-retry-test
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
