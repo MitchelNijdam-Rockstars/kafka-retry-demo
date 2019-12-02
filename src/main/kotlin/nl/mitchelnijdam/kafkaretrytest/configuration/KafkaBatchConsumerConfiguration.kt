@@ -29,7 +29,7 @@ class KafkaBatchConsumerConfiguration {
          * https://docs.spring.io/spring-kafka/reference/html/#seek-to-current
          */
         val errorHandler = SeekToCurrentBatchErrorHandler()
-        errorHandler.setBackOff(FixedBackOff(BACK_OFF_PERIOD, 1L)) // maxAttempts is not used, will retry indefinitely until it works
+        errorHandler.setBackOff(FixedBackOff(BACK_OFF_PERIOD, 1L))
         factory.setBatchErrorHandler(errorHandler)
 
         return factory
@@ -50,4 +50,3 @@ class KafkaBatchConsumerConfiguration {
         return factory
     }
 }
-

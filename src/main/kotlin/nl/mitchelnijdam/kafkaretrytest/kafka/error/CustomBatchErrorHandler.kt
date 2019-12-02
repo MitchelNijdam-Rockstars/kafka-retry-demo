@@ -10,6 +10,7 @@ import org.apache.kafka.common.TopicPartition
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.listener.ConsumerAwareBatchErrorHandler
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
+import org.springframework.kafka.listener.FailedRecordProcessor
 import org.springframework.stereotype.Component
 
 /**
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component
  * the batch to a Dead Letter Queue (DLQ), based on the exception type.
  *
  * Name of the DQL topic will be the name of the original topic + "-dlq"
+ *
+ * TODO: implement BackOff and [FailedRecordProcessor]
  *
  * @param kafkaTemplate the template to use for sending records to DLQ
  */

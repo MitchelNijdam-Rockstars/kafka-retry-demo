@@ -12,7 +12,7 @@ import org.springframework.retry.policy.SimpleRetryPolicy
 import org.springframework.retry.support.RetryTemplate
 import org.springframework.util.backoff.FixedBackOff
 
-const val BACK_OFF_PERIOD: Long = 1000L
+const val BACK_OFF_PERIOD: Long = 1000L // should not be longer than max.poll.interval.ms
 const val MAX_ATTEMPTS: Int = 5
 
 @Configuration
