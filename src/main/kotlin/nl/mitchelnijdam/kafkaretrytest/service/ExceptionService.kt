@@ -1,5 +1,6 @@
 package nl.mitchelnijdam.kafkaretrytest.service
 
+import nl.mitchelnijdam.kafkaretrytest.exception.TransientException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -61,7 +62,7 @@ class ExceptionService(
             if (recordAttempt.attempts < recoverAfterAttempt) {
                 logger.debug("Important things failed :(")
 
-                throw RuntimeException("OUCH I HURT MYSELF! recordId: ${recordAttempt.id}, attempt no ${recordAttempt.attempts}")
+                throw TransientException("OUCH I HURT MYSELF! recordId: ${recordAttempt.id}, attempt no ${recordAttempt.attempts}")
             }
 
             logger.debug("Important things succeeded! resetting attempt counter.")

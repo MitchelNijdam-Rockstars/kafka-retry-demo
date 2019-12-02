@@ -1,5 +1,6 @@
 logging.level:
   nl.mitchelnijdam.kafkaretrytest: DEBUG
+#  org.springframework.kafka: DEBUG
 
 spring:
   application.name: kafka-retry-test
