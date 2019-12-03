@@ -16,20 +16,27 @@ import org.springframework.stereotype.Component
  * @author Mitchel Nijdam on 28-11-2019
  */
 @Component
-class BatchKafkaConsumer(private val exceptionService: ExceptionService = ExceptionService(recoverAfterAttempt = 10)) {
+class BatchKafkaConsumer(private val exceptionService: ExceptionService = ExceptionService()) {
 
     private val logger: Logger = LoggerFactory.getLogger(BatchKafkaConsumer::class.java)
 
     @KafkaListener(topics = ["test-retry-batch"], containerFactory = "kafkaBatchFactory")
     fun listen(records: List<ConsumerRecord<String, String>>, consumer: Consumer<*, *>) {
-        logger.info("received ${records.size} 'test-retry-batch' record(s)!")
+        logger.info("received ${records.size} '${records.first().topic()}' record(s)!")
 
         exceptionService.withRecords(records).iFailButWillRecover()
     }
 
     @KafkaListener(topics = ["test-retry-batch-custom"], containerFactory = "customErrorHandlerKafkaBatchFactory")
     fun listenForCustomErrorHandlerMessage(records: List<ConsumerRecord<String, String>>, consumer: Consumer<*, *>) {
-        logger.info("received ${records.size} 'test-retry-batch' record(s)!")
+        logger.info("received ${records.size} '${records.first().topic()}' record(s)!")
+
+        exceptionService.withRecords(records).iFailButWillRecover()
+    }
+
+    @KafkaListener(topics = ["test-retry-batch-custom-e"], containerFactory = "extensiveCustomErrorHandlerKafkaBatchFactory")
+    fun listenForExtensiveCustomErrorHandlerMessage(records: List<ConsumerRecord<String, String>>, consumer: Consumer<*, *>) {
+        logger.info("received ${records.size} '${records.first().topic()}' record(s)!")
 
         exceptionService.withRecords(records).iFailButWillRecover()
     }

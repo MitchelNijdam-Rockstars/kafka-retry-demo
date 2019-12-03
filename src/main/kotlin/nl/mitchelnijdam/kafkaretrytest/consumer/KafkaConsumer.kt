@@ -19,7 +19,7 @@ class KafkaConsumer(private val exceptionService: ExceptionService = ExceptionSe
         exceptionService.withRecord(record).iFailButWillRecover()
     }
 
-    @KafkaListener(topics = ["test-retry-e-handler"], containerFactory = "springRetryErrorHandlerKafkaFactory")
+    @KafkaListener(topics = ["test-retry-e-handler"], containerFactory = "errorHandlerKafkaFactory")
     fun listenRetryErrorHandler(record: ConsumerRecord<String, String>){
         logger.info("received 'test-retry-e-handler' record! (value: ${record.value()})")
 

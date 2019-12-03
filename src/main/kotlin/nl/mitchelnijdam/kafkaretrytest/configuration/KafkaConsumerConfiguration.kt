@@ -31,7 +31,7 @@ class KafkaConsumerConfiguration {
     }
 
     @Bean
-    fun springRetryErrorHandlerKafkaFactory(kafkaConsumerFactory: ConsumerFactory<Any, Any>): KafkaListenerContainerFactory<*> {
+    fun errorHandlerKafkaFactory(kafkaConsumerFactory: ConsumerFactory<Any, Any>): KafkaListenerContainerFactory<*> {
 
         val factory = ConcurrentKafkaListenerContainerFactory<Int, String>()
         factory.setErrorHandler(SeekToCurrentErrorHandler(FixedBackOff(BACK_OFF_PERIOD, MAX_ATTEMPTS.toLong())))
