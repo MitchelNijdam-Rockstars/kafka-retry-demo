@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
  * This service will throw a "transient" exception in the sense that it will succeed after a certain number of retries.
  * Will use some properties from the kafka record in order to maintain a unique attempt counter.
  *
- * @author Mitchel Nijdam on 29-11-2019
+ * @author Mitchel Nijdam
  */
 class ExceptionService(
         // number of retries after which the fake service will succeed

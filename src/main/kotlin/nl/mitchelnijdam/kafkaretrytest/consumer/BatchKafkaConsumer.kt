@@ -10,8 +10,7 @@ import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 
 /**
- * This consumer is configured as a batchListener (see [KafkaBatchConsumerConfiguration.kafkaBatchFactory]).
- * Since spring-kafka doesn't provide a retry adapter for batch listeners, this has a somewhat coupled retry implementation.
+ * These consumers is configured as a batchListener (see [KafkaBatchConsumerConfiguration]).
  *
  * @author Mitchel Nijdam on 28-11-2019
  */

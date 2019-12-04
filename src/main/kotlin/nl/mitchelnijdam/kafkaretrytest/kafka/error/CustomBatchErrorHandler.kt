@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component
  * Name of the DQL topic will be the name of the original topic + "-dlq"
  *
  * @param kafkaTemplate the template to use for sending records to DLQ
+ *
+ * @author Mitchel Nijdam
  */
 @Component
 class CustomBatchErrorHandler(kafkaTemplate: KafkaTemplate<Any, Any>) : ConsumerAwareBatchErrorHandler {

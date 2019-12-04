@@ -6,6 +6,8 @@ import org.apache.kafka.common.TopicPartition
 
 /**
  * Custom seek function which will seek to the next (max + 1) offset for each [TopicPartition] in the [ConsumerRecords].
+ *
+ * @author Mitchel Nijdam
  */
 fun <K, V> ConsumerRecords<K, V>.seekToNext(consumer: Consumer<*, *>) {
     this.toList()

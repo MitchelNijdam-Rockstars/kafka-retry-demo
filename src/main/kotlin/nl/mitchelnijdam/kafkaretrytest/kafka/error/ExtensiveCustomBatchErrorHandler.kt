@@ -23,6 +23,9 @@ import org.springframework.util.backoff.BackOff
  * Used [FailedRecordProcessor] as inspiration.
  *
  * @param kafkaTemplate the template to use for sending records to DLQ
+ * @param backOff the waiting strategy to use between retryable errors
+ *
+ * @author Mitchel Nijdam
  */
 class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<Any, Any>, private val backOff: BackOff)
     : ConsumerAwareBatchErrorHandler {
@@ -33,23 +36,24 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
 
     // should contain classes that are considered retryable
     private val retryableExceptionClassifier: BinaryExceptionClassifier = ExtendedBinaryExceptionClassifier(emptyMap(), false)
+    private val retryableRecordsProcessor = RetryableRecordBatchProcessor(backOff)
 
     override fun handle(thrownException: Exception, records: ConsumerRecords<*, *>, consumer: Consumer<*, *>) {
         logger.debug("Handling exception ${thrownException.cause?.javaClass} for ${records.count()} records with offsets " +
                 records.joinToString { it.offset().toString() })
 
-        // TODO: use backOff
+        logger.debug("CURRENT ErrorHandler THREAD ID: ${Thread.currentThread().id}")
+
         val rootCause = thrownException.cause
 
         if (retryableExceptionClassifier.classify(rootCause)) {
             logger.debug("Exception is retryable!")
-            records.seekToCurrent(consumer)
+            retryableRecordsProcessor.seekToCurrent(records, consumer) // this uses BackOff
         } else {
             logger.debug("Exception is not retryable, sending batch to DLQ!")
             records.forEach { recoverer.accept(it, thrownException) }
             records.seekToNext(consumer)
         }
-
     }
 
     fun addRetryableException(exceptionType: Class<out Exception>) {
