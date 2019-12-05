@@ -10,7 +10,6 @@ import org.apache.kafka.common.TopicPartition
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.listener.ConsumerAwareBatchErrorHandler
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
-import org.springframework.kafka.listener.FailedRecordProcessor
 import org.springframework.stereotype.Component
 
 /**
@@ -25,14 +24,14 @@ import org.springframework.stereotype.Component
  * @author Mitchel Nijdam
  */
 @Component
-class CustomBatchErrorHandler(kafkaTemplate: KafkaTemplate<Any, Any>) : ConsumerAwareBatchErrorHandler {
+class SimpleCustomBatchErrorHandler(kafkaTemplate: KafkaTemplate<Any, Any>) : ConsumerAwareBatchErrorHandler {
 
-    private val logger = LogFactory.getLog(CustomBatchErrorHandler::class.java)
+    private val logger = LogFactory.getLog(SimpleCustomBatchErrorHandler::class.java)
 
     private val recoverer = DeadLetterPublishingRecoverer(kafkaTemplate) { r, _ -> TopicPartition(r.topic() + "-dlq", -1) }
 
     override fun handle(thrownException: Exception, records: ConsumerRecords<*, *>, consumer: Consumer<*, *>) {
-        logger.debug("Handling exception ${thrownException.cause?.javaClass} for ${records.count()} records with offsets " +
+        logger.warn("Handling exception ${thrownException.cause?.javaClass} for ${records.count()} records with offsets " +
                 records.joinToString { it.offset().toString() })
 
         val rootCause = thrownException.cause // the original exception is always wrapped by a Spring-Kafka exception

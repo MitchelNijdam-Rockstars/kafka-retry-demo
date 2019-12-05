@@ -16,6 +16,7 @@ fun <K, V> ConsumerRecords<K, V>.seekToNext(consumer: Consumer<*, *>) {
                 value.maxBy { it.offset() }!!.offset()
             }.forEach { (topicPartition, maxOffset) ->
                 consumer.seek(topicPartition, maxOffset + 1)
+                consumer.commitSync()
             }
 }
 
@@ -29,5 +30,6 @@ fun <K, V> ConsumerRecords<K, V>.seekToCurrent(consumer: Consumer<*, *>) {
                 value.minBy { it.offset() }!!.offset()
             }.forEach { (topicPartition, minOffset) ->
                 consumer.seek(topicPartition, minOffset)
+                consumer.commitSync()
             }
 }

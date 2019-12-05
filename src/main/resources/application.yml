@@ -1,5 +1,6 @@
 logging.level:
   nl.mitchelnijdam.kafkaretrytest: DEBUG
+  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: DEBUG
 #  org.springframework.kafka: DEBUG
 
 spring:

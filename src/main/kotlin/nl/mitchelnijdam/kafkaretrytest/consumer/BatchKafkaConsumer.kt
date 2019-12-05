@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
  * @author Mitchel Nijdam on 28-11-2019
  */
 @Component
-class BatchKafkaConsumer(private val exceptionService: ExceptionService = ExceptionService()) {
+class BatchKafkaConsumer(private val exceptionService: ExceptionService = ExceptionService(recoverAfterAttempt = 10)) {
 
     private val logger: Logger = LoggerFactory.getLogger(BatchKafkaConsumer::class.java)
 

@@ -1,6 +1,5 @@
 package nl.mitchelnijdam.kafkaretrytest.kafka.error
 
-import nl.mitchelnijdam.kafkaretrytest.kafka.seekToCurrent
 import nl.mitchelnijdam.kafkaretrytest.kafka.seekToNext
 import org.apache.commons.logging.LogFactory
 import org.apache.kafka.clients.consumer.Consumer
@@ -16,9 +15,9 @@ import org.springframework.util.backoff.BackOff
 /**
  * This will handle exceptions that are thrown out of a batch kafka listener.
  * Since it does not know where in the batch the exception occurred, it will either retry the whole batch or send
- * the batch to a Dead Letter Queue (DLQ), based on the exception type.
+ * the batch to a Dead Letter Queue (DLQ), based on the exception type and backoff policy configured.
  *
- * Name of the DQL topic will be the name of the original topic + "-dlq"
+ * The DQL topic will be the original topic + "-dlq"
  *
  * Used [FailedRecordProcessor] as inspiration.
  *
@@ -36,21 +35,19 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
 
     // should contain classes that are considered retryable
     private val retryableExceptionClassifier: BinaryExceptionClassifier = ExtendedBinaryExceptionClassifier(emptyMap(), false)
-    private val retryableRecordsProcessor = RetryableRecordBatchProcessor(backOff)
+    private val retryableRecordsProcessor = RetryableRecordBatchProcessor(backOff, recoverer)
 
     override fun handle(thrownException: Exception, records: ConsumerRecords<*, *>, consumer: Consumer<*, *>) {
-        logger.debug("Handling exception ${thrownException.cause?.javaClass} for ${records.count()} records with offsets " +
+        logger.warn("Handling exception ${thrownException.cause?.javaClass} for ${records.count()} records with offsets " +
                 records.joinToString { it.offset().toString() })
 
-        logger.debug("CURRENT ErrorHandler THREAD ID: ${Thread.currentThread().id}")
-
-        val rootCause = thrownException.cause
+        val rootCause = thrownException.cause // the original exception is always wrapped by a Spring-Kafka exception
 
         if (retryableExceptionClassifier.classify(rootCause)) {
-            logger.debug("Exception is retryable!")
-            retryableRecordsProcessor.seekToCurrent(records, consumer) // this uses BackOff
+            logger.debug("Exception ${rootCause?.javaClass?.simpleName} is retryable!")
+            retryableRecordsProcessor.seekToCurrentOrRecover(records, consumer, thrownException) // this uses BackOff
         } else {
-            logger.debug("Exception is not retryable, sending batch to DLQ!")
+            logger.debug("Exception ${rootCause?.javaClass?.simpleName} is not retryable, sending batch to DLQ!")
             records.forEach { recoverer.accept(it, thrownException) }
             records.seekToNext(consumer)
         }
@@ -63,10 +60,12 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
     /**
      *  Extended to provide visibility to the current classified exceptions.
      */
-    private class ExtendedBinaryExceptionClassifier internal constructor(typeMap: Map<Class<out Throwable?>?, Boolean?>?, defaultValue: Boolean)
-        : BinaryExceptionClassifier(typeMap, defaultValue) {
+    private class ExtendedBinaryExceptionClassifier internal constructor(
+            typeMap: Map<Class<out Throwable>, Boolean>,
+            defaultValue: Boolean
+    ) : BinaryExceptionClassifier(typeMap, defaultValue) {
 
-        public override fun getClassified(): MutableMap<Class<out Throwable?>, Boolean> {
+        public override fun getClassified(): MutableMap<Class<out Throwable>, Boolean> {
             return super.getClassified()
         }
 

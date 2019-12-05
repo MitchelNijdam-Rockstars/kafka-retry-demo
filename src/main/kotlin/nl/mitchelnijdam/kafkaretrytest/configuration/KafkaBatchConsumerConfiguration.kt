@@ -1,7 +1,7 @@
 package nl.mitchelnijdam.kafkaretrytest.configuration
 
 import nl.mitchelnijdam.kafkaretrytest.exception.TransientException
-import nl.mitchelnijdam.kafkaretrytest.kafka.error.CustomBatchErrorHandler
+import nl.mitchelnijdam.kafkaretrytest.kafka.error.SimpleCustomBatchErrorHandler
 import nl.mitchelnijdam.kafkaretrytest.kafka.error.ExtensiveCustomBatchErrorHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -10,7 +10,9 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.config.KafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.listener.SeekToCurrentBatchErrorHandler
+import org.springframework.util.backoff.ExponentialBackOff
 import org.springframework.util.backoff.FixedBackOff
 
 @Configuration
@@ -41,14 +43,15 @@ class KafkaBatchConsumerConfiguration {
     @Bean
     fun customErrorHandlerKafkaBatchFactory(
             kafkaConsumerFactory: ConsumerFactory<Any, Any>,
-            customBatchErrorHandler: CustomBatchErrorHandler
+            simpleCustomBatchErrorHandler: SimpleCustomBatchErrorHandler
     ): KafkaListenerContainerFactory<*> {
 
         val factory = ConcurrentKafkaListenerContainerFactory<Int, String>()
         factory.consumerFactory = kafkaConsumerFactory
         factory.isBatchListener = true
+        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
 
-        factory.setBatchErrorHandler(customBatchErrorHandler)
+        factory.setBatchErrorHandler(simpleCustomBatchErrorHandler)
 
         return factory
     }
@@ -63,8 +66,15 @@ class KafkaBatchConsumerConfiguration {
 
         factory.consumerFactory = kafkaConsumerFactory
         factory.isBatchListener = true
+        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
 
-        val errorHandler = ExtensiveCustomBatchErrorHandler(kafkaTemplate, FixedBackOff(BACK_OFF_PERIOD, MAX_ATTEMPTS.toLong()))
+        val backOff =  FixedBackOff(BACK_OFF_PERIOD, MAX_ATTEMPTS.toLong())
+        //val backOff =  ExponentialBackOff()
+        //backOff.initialInterval = 1_000L
+        //backOff.maxInterval = 30_000L // this should not be bigger than max.poll.interval.ms
+        //backOff.maxElapsedTime = 30_000L // total elapsed time, only way to stop the backoff
+
+        val errorHandler = ExtensiveCustomBatchErrorHandler(kafkaTemplate, backOff)
         errorHandler.addRetryableException(TransientException::class.java)
         factory.setBatchErrorHandler(errorHandler)
 

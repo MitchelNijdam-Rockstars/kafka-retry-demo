@@ -1,12 +1,14 @@
 package nl.mitchelnijdam.kafkaretrytest.kafka.error
 
 import nl.mitchelnijdam.kafkaretrytest.kafka.seekToCurrent
+import nl.mitchelnijdam.kafkaretrytest.kafka.seekToNext
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
 import org.springframework.util.backoff.BackOff
 import org.springframework.util.backoff.BackOffExecution
 import kotlin.concurrent.getOrSet
@@ -22,15 +24,21 @@ import kotlin.concurrent.getOrSet
  *
  * @author Mitchel Nijdam
  */
-class RetryableRecordBatchProcessor(private val backOff: BackOff) {
+class RetryableRecordBatchProcessor(private val backOff: BackOff, private val recoverer: DeadLetterPublishingRecoverer) {
 
     private val logger: Logger = LoggerFactory.getLogger(RetryableRecordBatchProcessor::class.java)
 
     private val failingBatches = ThreadLocal<Map<RecordBatchIdentifier, FailedRecordBatch>>()
 
-    fun seekToCurrent(recordBatch: ConsumerRecords<*, *>, consumer: Consumer<*, *>) {
-        logger.debug("CURRENT RetryableRecordBatchProcessor THREAD ID: ${Thread.currentThread().id}, object: $this")
-
+    /**
+     * Identifies if the current batch already has a [BackOffExecution] and uses that or starts a new one.
+     * If the backOff has exceeded the configured attempts, it will recover the records.
+     *
+     * @param recordBatch the batch that failed
+     * @param consumer the consumer from the error handler used for seeking to current
+     * @param thrownException exception used to add to recovered records
+     */
+    fun seekToCurrentOrRecover(recordBatch: ConsumerRecords<*, *>, consumer: Consumer<*, *>, thrownException: Exception) {
         val records = recordBatch.toList()
         val failuresMap = failingBatches.getOrSet { emptyMap() }.toMutableMap()
 
@@ -55,7 +63,12 @@ class RetryableRecordBatchProcessor(private val backOff: BackOff) {
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
             }
+
+            recordBatch.seekToCurrent(consumer)
         } else {
+            logger.warn("Kafka batch ${batchIdentifier.identifier} has exceeded backOff retries, sending batch to DLQ")
+            recordBatch.forEach { recoverer.accept(it, thrownException) }
+            recordBatch.seekToNext(consumer)
             failuresMap.remove(batchIdentifier)
         }
 
@@ -64,8 +77,6 @@ class RetryableRecordBatchProcessor(private val backOff: BackOff) {
         } else {
             this.failingBatches.set(failuresMap)
         }
-
-        recordBatch.seekToCurrent(consumer)
     }
 
     private fun getBatchIdentifier(records: List<ConsumerRecord<*, *>>): RecordBatchIdentifier {
