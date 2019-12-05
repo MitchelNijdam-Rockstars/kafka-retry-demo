@@ -5,7 +5,6 @@ import org.apache.commons.logging.LogFactory
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.common.TopicPartition
-import org.springframework.classify.BinaryExceptionClassifier
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.listener.ConsumerAwareBatchErrorHandler
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
@@ -34,7 +33,7 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
     private val recoverer = DeadLetterPublishingRecoverer(kafkaTemplate) { r, _ -> TopicPartition(r.topic() + "-dlq", -1) }
 
     // should contain classes that are considered retryable
-    private val retryableExceptionClassifier: BinaryExceptionClassifier = ExtendedBinaryExceptionClassifier(emptyMap(), false)
+    private val retryableExceptionIdentifier = RetryableExceptionIdentifier()
     private val retryableRecordsProcessor = RetryableRecordBatchProcessor(backOff, recoverer)
 
     override fun handle(thrownException: Exception, records: ConsumerRecords<*, *>, consumer: Consumer<*, *>) {
@@ -43,7 +42,7 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
 
         val rootCause = thrownException.cause // the original exception is always wrapped by a Spring-Kafka exception
 
-        if (retryableExceptionClassifier.classify(rootCause)) {
+        if (retryableExceptionIdentifier.shouldRetry(rootCause)) {
             logger.debug("Exception ${rootCause?.javaClass?.simpleName} is retryable!")
             retryableRecordsProcessor.seekToCurrentOrRecover(records, consumer, thrownException) // this uses BackOff
         } else {
@@ -54,24 +53,7 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
     }
 
     fun addRetryableException(exceptionType: Class<out Exception>) {
-        (retryableExceptionClassifier as ExtendedBinaryExceptionClassifier).classified[exceptionType] = true
-    }
-
-    /**
-     *  Extended to provide visibility to the current classified exceptions.
-     */
-    private class ExtendedBinaryExceptionClassifier internal constructor(
-            typeMap: Map<Class<out Throwable>, Boolean>,
-            defaultValue: Boolean
-    ) : BinaryExceptionClassifier(typeMap, defaultValue) {
-
-        public override fun getClassified(): MutableMap<Class<out Throwable>, Boolean> {
-            return super.getClassified()
-        }
-
-        init {
-            setTraverseCauses(true)
-        }
+        retryableExceptionIdentifier.addRetryableException(exceptionType)
     }
 }
 
