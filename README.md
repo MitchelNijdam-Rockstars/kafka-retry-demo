@@ -26,3 +26,5 @@ In order to use the different retry mechanisms, first check which one you would 
 Since error handling of batch listeners is quite a bit different from single message listeners, the configuration and consumers are seperated. I've added two custom batch error handlers, one simple and one more extensive.
 
 The extensive batch error handler uses a `BinaryExceptionClassifier` in order to identify transient exceptions. You have to provide these in the `KafkaBatchConsumerConfiguration.kt`. It also has a custom implementation of the `BackOff` so you can use different stategies (like `FixedBackOff` or `ExponentialBackOff`). If either the exception is not a transient exception _or_ the backoff is expired for the current batch, it will send all records to the DLQ.
+
+NOTE: only use this approach when you are sure you can retry the whole batch.
