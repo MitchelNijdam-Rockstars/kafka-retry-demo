@@ -45,4 +45,9 @@ class SimpleCustomBatchErrorHandler(kafkaTemplate: KafkaTemplate<Any, Any>) : Co
             records.seekToNext(consumer)
         }
     }
+
+    // makes sure the offset is committed to kafka after the error handler finished without exceptions
+    override fun isAckAfterHandle(): Boolean {
+        return true
+    }
 }
