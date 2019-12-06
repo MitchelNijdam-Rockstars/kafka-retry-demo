@@ -66,7 +66,6 @@ class KafkaBatchConsumerConfiguration {
 
         factory.consumerFactory = kafkaConsumerFactory
         factory.isBatchListener = true
-        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
 
         val backOff =  FixedBackOff(BACK_OFF_PERIOD, MAX_ATTEMPTS.toLong())
         //val backOff =  ExponentialBackOff()

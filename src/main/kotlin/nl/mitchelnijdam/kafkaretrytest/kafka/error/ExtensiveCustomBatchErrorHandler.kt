@@ -52,6 +52,12 @@ class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<
         }
     }
 
+
+    // makes sure the offset is committed to kafka after the error handler finished without exceptions
+    override fun isAckAfterHandle(): Boolean {
+        return true
+    }
+
     fun addRetryableException(exceptionType: Class<out Exception>) {
         retryableExceptionIdentifier.addRetryableException(exceptionType)
     }
