@@ -25,7 +25,7 @@ import org.springframework.util.backoff.BackOff
  *
  * @author Mitchel Nijdam
  */
-class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<Any, Any>, private val backOff: BackOff)
+class ExtensiveCustomBatchErrorHandler(private val kafkaTemplate: KafkaTemplate<Any, Any>, backOff: BackOff)
     : ConsumerAwareBatchErrorHandler {
 
     private val logger = LogFactory.getLog(ExtensiveCustomBatchErrorHandler::class.java)
