@@ -8,7 +8,7 @@ This is where this project comes in: it provides some examples on how to handle 
 ### Setup
 Make sure you have a local kafka instance running. Configure your broker ip in `application.yml` in `bootstrap-servers: <local_kafka_ip>:9092`.
 
-Project uses Java 11.
+Project uses Java 11 and Kotlin 1.3.50.
 
 ### Local
 Produce a kafka message with the tool `kafkacat` to any topic used by a `@kafkaListener`.
